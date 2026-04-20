@@ -12,7 +12,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ─── Middleware ───────────────────────────────────────────────
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(cors({ 
+  origin: ["http://localhost:5173", "https://twinmind-app.onrender.com"], 
+  credentials: true 
+}));
 app.use(express.json({ limit: "10mb" }));
 
 // Rate limiting to avoid abuse
@@ -24,12 +27,12 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ─── Routes ──────────────────────────────────────────────────
-app.use("/transcribe", transcribeRoute);
-app.use("/suggestions", suggestionsRoute);
-app.use("/chat", chatRoute);
+app.use("/api/transcribe", transcribeRoute);
+app.use("/api/suggestions", suggestionsRoute);
+app.use("/api/chat", chatRoute);
 
 // ─── Health check ─────────────────────────────────────────────
-app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }));
+app.get("/api/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }));
 
 // ─── Error handler ────────────────────────────────────────────
 app.use((err, req, res, next) => {
