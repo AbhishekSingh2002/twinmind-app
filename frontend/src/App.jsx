@@ -170,5 +170,5 @@ const s = {
   errorBadge: { background: "rgba(250,109,143,0.12)", color: "var(--accent2)", border: "1px solid rgba(250,109,143,0.3)", borderRadius: "8px", padding: "4px 12px", fontSize: "11px", cursor: "pointer", fontFamily: "var(--mono)" },
   banner: { display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", padding: "8px 24px", background: "rgba(124,109,250,0.08)", borderBottom: "1px solid rgba(124,109,250,0.2)", fontSize: "12px", color: "var(--text-dim)", flexShrink: 0 },
   bannerBtn: { background: "transparent", color: "var(--accent)", fontSize: "12px", fontWeight: 600, cursor: "pointer", textDecoration: "underline" },
-  columns: { display: "grid", gridTemplateColumns: "1fr 340px 380px", flex: 1, overflow: "hidden" },
+  columns: { display: "grid", gridTemplateColumns: "1fr 340px 380px", flex: 1, overflow: "auto" },
 };
