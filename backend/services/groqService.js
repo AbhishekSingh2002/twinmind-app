@@ -2,17 +2,15 @@ import fetch from "node-fetch";
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 const OPENAI_BASE_URL = "https://api.openai.com/v1";
-const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 /**
  * Core function to call AI chat completions (Groq or OpenAI)
  */
 async function callAI({ messages, model = "gpt-oss-120b", apiKey, maxTokens = 1024, temperature = 0.7 }) {
   const isOpenAI = model.startsWith('gpt-') && model !== 'gpt-oss-120b';
-  const isGPTOSS = model === 'gpt-oss-120b';
-  const baseURL = isOpenAI ? OPENAI_BASE_URL : isGPTOSS ? OPENROUTER_BASE_URL : GROQ_BASE_URL;
-  const key = apiKey || (isOpenAI ? process.env.OPENAI_API_KEY : isGPTOSS ? process.env.OPENROUTER_API_KEY : process.env.GROQ_API_KEY);
-  const keyType = isOpenAI ? "OpenAI" : isGPTOSS ? "OpenRouter" : "Groq";
+  const baseURL = isOpenAI ? OPENAI_BASE_URL : GROQ_BASE_URL;
+  const key = apiKey || (isOpenAI ? process.env.OPENAI_API_KEY : process.env.GROQ_API_KEY);
+  const keyType = isOpenAI ? "OpenAI" : "Groq";
   
   if (!key) throw new Error(`${keyType} API key is missing.`);
 

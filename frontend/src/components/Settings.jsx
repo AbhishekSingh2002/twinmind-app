@@ -33,17 +33,9 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
           <div style={styles.field}>
             <label style={styles.label}>API Key</label>
             <p style={styles.fieldHint}>
-              For GPT-OSS:{" "}
-              <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noreferrer" style={styles.link}>
-                OpenRouter API Keys
-              </a>
-              {" | For GPT models: "}
-              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" style={styles.link}>
-                OpenAI API Keys
-              </a>
-              {" | For Groq models: "}
+              Get your API key at{" "}
               <a href="https://console.groq.com" target="_blank" rel="noreferrer" style={styles.link}>
-                Groq Console
+                console.groq.com
               </a>
             </p>
             <div style={styles.inputWrap}>
@@ -51,7 +43,7 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
                 type={showKey ? "text" : "password"}
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-                placeholder="sk-or-... or sk-... or gsk_..."
+                placeholder="gsk_..."
                 style={styles.input}
               />
               <button style={styles.eyeBtn} onClick={() => setShowKey((s) => !s)}>
@@ -73,12 +65,9 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
                 style={styles.select}
               >
                 <option value="gpt-oss-120b">🔥 GPT-OSS 120B (Required)</option>
-                <option value="gpt-4-turbo">🚀 GPT-4 Turbo</option>
-                <option value="gpt-4">🧠 GPT-4 (Advanced)</option>
-                <option value="llama-3.1-405b-reasoning">🧠 LLaMA 3.1 405B (Reasoning)</option>
                 <option value="llama-3.3-70b-versatile">⚡ LLaMA 3.3 70B (Versatile)</option>
+                <option value="llama-3.1-8b-instant">🚀 LLaMA 3.1 8B (Instant)</option>
                 <option value="mixtral-8x7b-32768">🔀 Mixtral 8x7B (32K)</option>
-                <option value="gemma2-9b-it">💎 Gemma 2 9B (Instruction)</option>
               </select>
             </div>
           </div>
