@@ -16,7 +16,7 @@ const GLOBAL_CSS = `
     --text: #e8e8f0; --text-muted: #6b6b8a; --text-dim: #9090b0;
     --radius: 12px; --font: 'Syne', sans-serif; --mono: 'JetBrains Mono', monospace;
   }
-  html, body, #root { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); overflow: auto; }
+  html, body, #root { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); overflow: hidden; }
   ::-webkit-scrollbar { width: 8px; }
   ::-webkit-scrollbar-track { background: var(--surface2); }
   ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 99px; }
