@@ -4,7 +4,7 @@
  * All functions throw an Error with a human-readable message on failure.
  */
 
-const BASE = ""; // Vite proxy handles routing to :5000
+const BASE = "https://twinmind-app.onrender.com"; // Render backend URL
 
 async function post(path, body) {
   const res = await fetch(`${BASE}${path}`, {
@@ -19,25 +19,25 @@ async function post(path, body) {
 
 /** Fetch 3 context-aware suggestions for a given transcript */
 export async function fetchSuggestions(transcript, apiKey, settings = {}) {
-  const { suggestions } = await post("/suggestions", { transcript, apiKey, settings });
+  const { suggestions } = await post("/api/suggestions", { transcript, apiKey, settings });
   return suggestions;
 }
 
 /** Expand a clicked suggestion into a full detailed answer */
 export async function expandSuggestion(transcript, suggestion, apiKey, settings = {}) {
-  const { answer } = await post("/suggestions/expand", { transcript, suggestion, apiKey, settings });
+  const { answer } = await post("/api/suggestions/expand", { transcript, suggestion, apiKey, settings });
   return answer;
 }
 
 /** Send a chat question grounded in the meeting transcript */
 export async function sendChatMessage(transcript, history, question, apiKey, settings = {}) {
-  const { answer } = await post("/chat", { transcript, history, question, apiKey, settings });
+  const { answer } = await post("/api/chat", { transcript, history, question, apiKey, settings });
   return answer;
 }
 
 /** Check if backend is reachable */
 export async function checkHealth() {
-  const res = await fetch("/health");
+  const res = await fetch(`${BASE}/api/health`);
   return res.ok;
 }
 
