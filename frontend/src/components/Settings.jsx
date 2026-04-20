@@ -10,7 +10,7 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
     chatPrompt: '',
     suggestionsContextWindow: 4000,
     detailedAnswersContextWindow: 6000,
-    model: 'gpt-oss-120b'
+    model: 'openai/gpt-oss-120b'
   });
 
   const handleSave = () => {
@@ -64,7 +64,7 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
                 onChange={(e) => setLocalSettings(prev => ({...prev, model: e.target.value}))}
                 style={styles.select}
               >
-                <option value="gpt-oss-120b">🔥 GPT-OSS 120B (Required)</option>
+                <option value="openai/gpt-oss-120b">🔥 GPT-OSS 120B (Required)</option>
                 <option value="llama-3.3-70b-versatile">⚡ LLaMA 3.3 70B (Versatile)</option>
                 <option value="llama-3.1-8b-instant">🚀 LLaMA 3.1 8B (Instant)</option>
                 <option value="mixtral-8x7b-32768">🔀 Mixtral 8x7B (32K)</option>

@@ -6,8 +6,8 @@ const OPENAI_BASE_URL = "https://api.openai.com/v1";
 /**
  * Core function to call AI chat completions (Groq or OpenAI)
  */
-async function callAI({ messages, model = "gpt-oss-120b", apiKey, maxTokens = 1024, temperature = 0.7 }) {
-  const isOpenAI = model.startsWith('gpt-') && model !== 'gpt-oss-120b';
+async function callAI({ messages, model = "openai/gpt-oss-120b", apiKey, maxTokens = 1024, temperature = 0.7 }) {
+  const isOpenAI = model.startsWith('gpt-') && !model.includes('gpt-oss');
   const baseURL = isOpenAI ? OPENAI_BASE_URL : GROQ_BASE_URL;
   const key = apiKey || (isOpenAI ? process.env.OPENAI_API_KEY : process.env.GROQ_API_KEY);
   const keyType = isOpenAI ? "OpenAI" : "Groq";
@@ -78,8 +78,8 @@ export async function transcribeAudio(audioBuffer, mimeType = "audio/webm", apiK
  * Generate 3 smart suggestions from the latest transcript chunk
  */
 export async function getSuggestions(transcript, apiKey, settings = {}) {
-  const customPrompt = settings.suggestionsPrompt;
-  const model = settings.model || "gpt-oss-120b";
+  const customPrompt = settings?.suggestionsPrompt;
+  const model = settings?.model || "openai/gpt-oss-120b";
   
   const systemPrompt = customPrompt || `You are an AI meeting copilot that helps users stay sharp during live conversations.
 
@@ -131,9 +131,9 @@ OUTPUT FORMAT:
  * Get a detailed answer when user clicks a suggestion
  */
 export async function getDetailedAnswer(transcript, suggestion, apiKey, settings = {}) {
-  const customPrompt = settings.detailedAnswersPrompt;
-  const model = settings.model || "gpt-oss-120b";
-  const contextWindow = settings.detailedAnswersContextWindow || 6000;
+  const customPrompt = settings?.detailedAnswersPrompt;
+  const model = settings?.model || "openai/gpt-oss-120b";
+  const contextWindow = settings?.detailedAnswersContextWindow || 6000;
   
   const systemPrompt = customPrompt || `You are an expert AI meeting assistant providing detailed, actionable answers.
 
@@ -166,8 +166,8 @@ Keep the total response under 200 words. Be clear, structured, and meeting-focus
  * Handle free-form chat questions from user
  */
 export async function getChatAnswer(transcript, history, question, apiKey, settings = {}) {
-  const customPrompt = settings.chatPrompt;
-  const model = settings.model || "gpt-oss-120b";
+  const customPrompt = settings?.chatPrompt;
+  const model = settings?.model || "openai/gpt-oss-120b";
   
   const systemPrompt = customPrompt || `You are an AI assistant embedded inside a live meeting tool.
 
