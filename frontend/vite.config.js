@@ -6,10 +6,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/transcribe": "http://localhost:5000",
-      "/suggestions": "http://localhost:5000",
-      "/chat": "http://localhost:5000",
-      "/health": "http://localhost:5000",
+      "/api/transcribe": "http://localhost:5000",
+      "/api/suggestions": "http://localhost:5000",
+      "/api/chat": "http://localhost:5000",
+      "/api/health": "http://localhost:5000",
     },
   },
 });
