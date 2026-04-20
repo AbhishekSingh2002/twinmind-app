@@ -10,15 +10,16 @@ const router = express.Router();
  */
 router.post("/", async (req, res, next) => {
   try {
-    const { transcript, apiKey, settings = {} } = req.body;
+    const { transcript, apiKey, settings } = req.body;
+    const safeSettings = settings || {};
     if (!transcript || transcript.trim().length < 20) {
       return res.status(400).json({ error: "Transcript too short to generate suggestions." });
     }
 
     // Use custom context window or default to 1500
-    const contextWindow = settings?.suggestionsContextWindow || 1500;
+    const contextWindow = safeSettings?.suggestionsContextWindow || 1500;
     const chunk = transcript.slice(-contextWindow);
-    const suggestions = await getSuggestions(chunk, apiKey, settings);
+    const suggestions = await getSuggestions(chunk, apiKey, safeSettings);
 
     res.json({ suggestions, timestamp: new Date().toISOString() });
   } catch (err) {
@@ -33,10 +34,11 @@ router.post("/", async (req, res, next) => {
  */
 router.post("/expand", async (req, res, next) => {
   try {
-    const { transcript, suggestion, apiKey, settings = {} } = req.body;
+    const { transcript, suggestion, apiKey, settings } = req.body;
+    const safeSettings = settings || {};
     if (!suggestion?.text) return res.status(400).json({ error: "Suggestion text is required." });
 
-    const answer = await getDetailedAnswer(transcript, suggestion, apiKey, settings);
+    const answer = await getDetailedAnswer(transcript, suggestion, apiKey, safeSettings);
     res.json({ answer, timestamp: new Date().toISOString() });
   } catch (err) {
     next(err);

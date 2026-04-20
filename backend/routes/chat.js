@@ -10,12 +10,13 @@ const router = express.Router();
  */
 router.post("/", async (req, res, next) => {
   try {
-    const { transcript, history = [], question, apiKey, settings = {} } = req.body;
+    const { transcript, history = [], question, apiKey, settings } = req.body;
+    const safeSettings = settings || {};
     if (!question?.trim()) return res.status(400).json({ error: "Question is required." });
 
     // Keep only last 10 messages for context window efficiency
     const recentHistory = history.slice(-10);
-    const answer = await getChatAnswer(transcript, recentHistory, question, apiKey, settings);
+    const answer = await getChatAnswer(transcript, recentHistory, question, apiKey, safeSettings);
 
     res.json({ answer, timestamp: new Date().toISOString() });
   } catch (err) {
