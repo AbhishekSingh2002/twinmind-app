@@ -35,6 +35,7 @@ export default function App() {
   const [suggestions, setSuggestions]            = useState([]);
   const [chatHistory, setChatHistory]            = useState([]);
   const [apiKey, setApiKey]                      = useState("");
+  const [settings, setSettings]                  = useState(null);
   const [isLoadingSuggestions, setIsLoadingSugg] = useState(false);
   const [showSettings, setShowSettings]          = useState(false);
   const [error, setError]                        = useState("");
@@ -137,7 +138,7 @@ export default function App() {
           <Chat history={chatHistory} onSend={handleChatSend} />
         </div>
 
-        {showSettings && <Settings apiKey={apiKey} setApiKey={setApiKey} onClose={() => setShowSettings(false)} />}
+        {showSettings && <Settings apiKey={apiKey} setApiKey={setApiKey} settings={settings} setSettings={setSettings} onClose={() => setShowSettings(false)} />}
       </div>
     </ErrorBoundary>
   );

@@ -1,12 +1,20 @@
 import { useState } from "react";
 
-export default function Settings({ apiKey, setApiKey, onClose }) {
+export default function Settings({ apiKey, setApiKey, onClose, settings, setSettings }) {
   const [key, setKey] = useState(apiKey);
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [localSettings, setLocalSettings] = useState(settings || {
+    suggestionsPrompt: '',
+    detailedAnswersPrompt: '',
+    chatPrompt: '',
+    suggestionsContextWindow: 4000,
+    detailedAnswersContextWindow: 6000
+  });
 
   const handleSave = () => {
     setApiKey(key.trim());
+    setSettings(localSettings);
     setSaved(true);
     setTimeout(() => { setSaved(false); onClose(); }, 800);
   };
@@ -40,6 +48,80 @@ export default function Settings({ apiKey, setApiKey, onClose }) {
               <button style={styles.eyeBtn} onClick={() => setShowKey((s) => !s)}>
                 {showKey ? "🙈" : "👁"}
               </button>
+            </div>
+          </div>
+
+          {/* Prompts Section */}
+          <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>📝 Custom Prompts</h3>
+            
+            <div style={styles.field}>
+              <label style={styles.label}>Live Suggestions Prompt</label>
+              <p style={styles.fieldHint}>Customize the prompt used for generating live suggestions</p>
+              <textarea
+                value={localSettings.suggestionsPrompt}
+                onChange={(e) => setLocalSettings(prev => ({...prev, suggestionsPrompt: e.target.value}))}
+                placeholder="Leave empty to use default suggestions prompt..."
+                style={styles.textarea}
+                rows={4}
+              />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Detailed Answers Prompt</label>
+              <p style={styles.fieldHint}>Customize the prompt used for expanded suggestion answers</p>
+              <textarea
+                value={localSettings.detailedAnswersPrompt}
+                onChange={(e) => setLocalSettings(prev => ({...prev, detailedAnswersPrompt: e.target.value}))}
+                placeholder="Leave empty to use default detailed answers prompt..."
+                style={styles.textarea}
+                rows={4}
+              />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Chat Prompt</label>
+              <p style={styles.fieldHint}>Customize the system prompt for chat interactions</p>
+              <textarea
+                value={localSettings.chatPrompt}
+                onChange={(e) => setLocalSettings(prev => ({...prev, chatPrompt: e.target.value}))}
+                placeholder="Leave empty to use default chat prompt..."
+                style={styles.textarea}
+                rows={4}
+              />
+            </div>
+          </div>
+
+          {/* Context Windows Section */}
+          <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>🪟 Context Windows</h3>
+            
+            <div style={styles.field}>
+              <label style={styles.label}>Suggestions Context Window</label>
+              <p style={styles.fieldHint}>Maximum characters of transcript to consider for suggestions</p>
+              <input
+                type="number"
+                value={localSettings.suggestionsContextWindow}
+                onChange={(e) => setLocalSettings(prev => ({...prev, suggestionsContextWindow: parseInt(e.target.value) || 4000}))}
+                min="1000"
+                max="10000"
+                step="500"
+                style={styles.numberInput}
+              />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Detailed Answers Context Window</label>
+              <p style={styles.fieldHint}>Maximum characters of transcript to consider for expanded answers</p>
+              <input
+                type="number"
+                value={localSettings.detailedAnswersContextWindow}
+                onChange={(e) => setLocalSettings(prev => ({...prev, detailedAnswersContextWindow: parseInt(e.target.value) || 6000}))}
+                min="1000"
+                max="15000"
+                step="500"
+                style={styles.numberInput}
+              />
             </div>
           </div>
 
@@ -102,8 +184,10 @@ const styles = {
     background: "var(--surface)",
     border: "1px solid var(--border)",
     borderRadius: "16px",
-    width: "480px",
+    width: "640px",
     maxWidth: "90vw",
+    maxHeight: "80vh",
+    overflow: "auto",
     animation: "fadeSlideIn 0.2s ease",
   },
   modalHeader: {
@@ -201,5 +285,44 @@ const styles = {
   savedBtn: {
     background: "var(--accent3)",
     color: "#000",
+  },
+  section: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
+    padding: "16px",
+    background: "var(--surface2)",
+    border: "1px solid var(--border)",
+    borderRadius: "12px",
+  },
+  sectionTitle: {
+    fontSize: "14px",
+    fontWeight: 600,
+    color: "var(--text)",
+    marginBottom: "4px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  textarea: {
+    background: "var(--surface)",
+    border: "1px solid var(--border)",
+    borderRadius: "10px",
+    color: "var(--text)",
+    fontSize: "13px",
+    padding: "10px 14px",
+    fontFamily: "var(--mono)",
+    resize: "vertical",
+    minHeight: "80px",
+  },
+  numberInput: {
+    background: "var(--surface)",
+    border: "1px solid var(--border)",
+    borderRadius: "10px",
+    color: "var(--text)",
+    fontSize: "13px",
+    padding: "10px 14px",
+    fontFamily: "var(--mono)",
+    width: "200px",
   },
 };

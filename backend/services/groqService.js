@@ -5,7 +5,7 @@ const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 /**
  * Core function to call Groq chat completions
  */
-async function callGroq({ messages, model = "llama3-70b-8192", apiKey, maxTokens = 1024, temperature = 0.7 }) {
+async function callGroq({ messages, model = "llama-3.3-70b-versatile", apiKey, maxTokens = 1024, temperature = 0.7 }) {
   const key = apiKey || process.env.GROQ_API_KEY;
   if (!key) throw new Error("Groq API key is missing.");
 
