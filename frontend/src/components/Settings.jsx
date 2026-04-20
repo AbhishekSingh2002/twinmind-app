@@ -9,7 +9,8 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
     detailedAnswersPrompt: '',
     chatPrompt: '',
     suggestionsContextWindow: 4000,
-    detailedAnswersContextWindow: 6000
+    detailedAnswersContextWindow: 6000,
+    model: 'llama-3.1-405b-reasoning'
   });
 
   const handleSave = () => {
@@ -48,6 +49,26 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
               <button style={styles.eyeBtn} onClick={() => setShowKey((s) => !s)}>
                 {showKey ? "🙈" : "👁"}
               </button>
+            </div>
+          </div>
+
+          {/* Model Configuration */}
+          <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>🤖 Model Configuration</h3>
+            
+            <div style={styles.field}>
+              <label style={styles.label}>AI Model</label>
+              <p style={styles.fieldHint}>Choose the AI model for suggestions and chat responses</p>
+              <select
+                value={localSettings.model}
+                onChange={(e) => setLocalSettings(prev => ({...prev, model: e.target.value}))}
+                style={styles.select}
+              >
+                <option value="llama-3.1-405b-reasoning">🧠 LLaMA 3.1 405B (Reasoning)</option>
+                <option value="llama-3.3-70b-versatile">⚡ LLaMA 3.3 70B (Versatile)</option>
+                <option value="mixtral-8x7b-32768">🔀 Mixtral 8x7B (32K)</option>
+                <option value="gemma2-9b-it">💎 Gemma 2 9B (Instruction)</option>
+              </select>
             </div>
           </div>
 
@@ -324,5 +345,16 @@ const styles = {
     padding: "10px 14px",
     fontFamily: "var(--mono)",
     width: "200px",
+  },
+  select: {
+    background: "var(--surface)",
+    border: "1px solid var(--border)",
+    borderRadius: "10px",
+    color: "var(--text)",
+    fontSize: "13px",
+    padding: "10px 14px",
+    fontFamily: "var(--mono)",
+    width: "100%",
+    cursor: "pointer",
   },
 };

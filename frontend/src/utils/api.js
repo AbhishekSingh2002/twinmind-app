@@ -18,20 +18,20 @@ async function post(path, body) {
 }
 
 /** Fetch 3 context-aware suggestions for a given transcript */
-export async function fetchSuggestions(transcript, apiKey) {
-  const { suggestions } = await post("/suggestions", { transcript, apiKey });
+export async function fetchSuggestions(transcript, apiKey, settings = {}) {
+  const { suggestions } = await post("/suggestions", { transcript, apiKey, settings });
   return suggestions;
 }
 
 /** Expand a clicked suggestion into a full detailed answer */
-export async function expandSuggestion(transcript, suggestion, apiKey) {
-  const { answer } = await post("/suggestions/expand", { transcript, suggestion, apiKey });
+export async function expandSuggestion(transcript, suggestion, apiKey, settings = {}) {
+  const { answer } = await post("/suggestions/expand", { transcript, suggestion, apiKey, settings });
   return answer;
 }
 
 /** Send a chat question grounded in the meeting transcript */
-export async function sendChatMessage(transcript, history, question, apiKey) {
-  const { answer } = await post("/chat", { transcript, history, question, apiKey });
+export async function sendChatMessage(transcript, history, question, apiKey, settings = {}) {
+  const { answer } = await post("/chat", { transcript, history, question, apiKey, settings });
   return answer;
 }
 

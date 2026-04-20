@@ -50,7 +50,7 @@ export default function App() {
       if (text.trim().length < 30) return;
       setIsLoadingSugg(true);
       try {
-        const s = await fetchSuggestions(text, apiKey);
+        const s = await fetchSuggestions(text, apiKey, settings);
         setSuggestions(s);
       } catch (e) {
         setError("Suggestions: " + e.message);
@@ -58,7 +58,7 @@ export default function App() {
         setIsLoadingSugg(false);
       }
     }, 3000);
-  }, [apiKey]);
+  }, [apiKey, settings]);
 
   const handleChunk = useCallback((chunk) => {
     setChunks((prev) => {
@@ -72,24 +72,24 @@ export default function App() {
     const userMsg = { role: "user", content: suggestion.icon + " " + suggestion.text, type: "suggestion" };
     setChatHistory((h) => [...h, userMsg]);
     try {
-      const answer = await expandSuggestion(getTranscript(), suggestion, apiKey);
+      const answer = await expandSuggestion(getTranscript(), suggestion, apiKey, settings);
       setChatHistory((h) => [...h, { role: "assistant", content: answer }]);
     } catch (e) {
       setChatHistory((h) => [...h, { role: "assistant", content: "Error: " + e.message }]);
     }
-  }, [chunks, apiKey]);
+  }, [chunks, apiKey, settings]);
 
   const handleChatSend = useCallback(async (question) => {
     const userMsg = { role: "user", content: question };
     setChatHistory((prev) => [...prev, userMsg]);
     try {
       const snapshot = chatHistory.slice(-10);
-      const answer = await sendChatMessage(getTranscript(), snapshot, question, apiKey);
+      const answer = await sendChatMessage(getTranscript(), snapshot, question, apiKey, settings);
       setChatHistory((h) => [...h, { role: "assistant", content: answer }]);
     } catch (e) {
       setChatHistory((h) => [...h, { role: "assistant", content: "Error: " + e.message }]);
     }
-  }, [chunks, chatHistory, apiKey]);
+  }, [chunks, chatHistory, apiKey, settings]);
 
   const loadDemo = () => {
     setChunks(DEMO_CHUNKS);

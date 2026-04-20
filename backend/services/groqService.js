@@ -5,7 +5,7 @@ const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 /**
  * Core function to call Groq chat completions
  */
-async function callGroq({ messages, model = "llama-3.3-70b-versatile", apiKey, maxTokens = 1024, temperature = 0.7 }) {
+async function callGroq({ messages, model = "llama-3.1-405b-reasoning", apiKey, maxTokens = 1024, temperature = 0.7 }) {
   const key = apiKey || process.env.GROQ_API_KEY;
   if (!key) throw new Error("Groq API key is missing.");
 
@@ -65,8 +65,11 @@ export async function transcribeAudio(audioBuffer, mimeType = "audio/webm", apiK
 /**
  * Generate 3 smart suggestions from the latest transcript chunk
  */
-export async function getSuggestions(transcript, apiKey) {
-  const systemPrompt = `You are an AI meeting copilot that helps users stay sharp during live conversations.
+export async function getSuggestions(transcript, apiKey, settings = {}) {
+  const customPrompt = settings.suggestionsPrompt;
+  const model = settings.model || "llama-3.1-405b-reasoning";
+  
+  const systemPrompt = customPrompt || `You are an AI meeting copilot that helps users stay sharp during live conversations.
 
 Based on the latest meeting transcript, generate EXACTLY 3 smart, context-aware suggestions.
 
@@ -96,6 +99,7 @@ OUTPUT FORMAT:
       { role: "user", content: userPrompt },
     ],
     apiKey,
+    model,
     maxTokens: 512,
     temperature: 0.6,
   });
@@ -114,8 +118,12 @@ OUTPUT FORMAT:
 /**
  * Get a detailed answer when user clicks a suggestion
  */
-export async function getDetailedAnswer(transcript, suggestion, apiKey) {
-  const systemPrompt = `You are an expert AI meeting assistant providing detailed, actionable answers.
+export async function getDetailedAnswer(transcript, suggestion, apiKey, settings = {}) {
+  const customPrompt = settings.detailedAnswersPrompt;
+  const model = settings.model || "llama-3.1-405b-reasoning";
+  const contextWindow = settings.detailedAnswersContextWindow || 6000;
+  
+  const systemPrompt = customPrompt || `You are an expert AI meeting assistant providing detailed, actionable answers.
 
 Given the meeting transcript and the user's selected suggestion, provide a comprehensive response.
 
@@ -126,7 +134,9 @@ FORMAT YOUR RESPONSE AS:
 
 Keep the total response under 200 words. Be clear, structured, and meeting-focused.`;
 
-  const userPrompt = `Full meeting transcript:\n${transcript}\n\nUser selected this suggestion:\n"${suggestion.text}"\n\nType: ${suggestion.type}`;
+  // Use custom context window
+  const limitedTranscript = transcript.slice(-contextWindow);
+  const userPrompt = `Full meeting transcript:\n${limitedTranscript}\n\nUser selected this suggestion:\n"${suggestion.text}"\n\nType: ${suggestion.type}`;
 
   return callGroq({
     messages: [
@@ -134,6 +144,7 @@ Keep the total response under 200 words. Be clear, structured, and meeting-focus
       { role: "user", content: userPrompt },
     ],
     apiKey,
+    model,
     maxTokens: 512,
     temperature: 0.5,
   });
@@ -142,8 +153,11 @@ Keep the total response under 200 words. Be clear, structured, and meeting-focus
 /**
  * Handle free-form chat questions from user
  */
-export async function getChatAnswer(transcript, history, question, apiKey) {
-  const systemPrompt = `You are an AI assistant embedded inside a live meeting tool.
+export async function getChatAnswer(transcript, history, question, apiKey, settings = {}) {
+  const customPrompt = settings.chatPrompt;
+  const model = settings.model || "llama-3.1-405b-reasoning";
+  
+  const systemPrompt = customPrompt || `You are an AI assistant embedded inside a live meeting tool.
 
 You have access to the current meeting transcript. Answer the user's questions clearly and concisely.
 
@@ -162,5 +176,5 @@ ${transcript || "(No transcript yet — meeting may not have started)"}`;
     { role: "user", content: question },
   ];
 
-  return callGroq({ messages, apiKey, maxTokens: 768, temperature: 0.65 });
+  return callGroq({ messages, apiKey, model, maxTokens: 768, temperature: 0.65 });
 }
