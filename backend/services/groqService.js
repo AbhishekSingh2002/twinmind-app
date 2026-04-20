@@ -2,15 +2,17 @@ import fetch from "node-fetch";
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 const OPENAI_BASE_URL = "https://api.openai.com/v1";
+const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 /**
  * Core function to call AI chat completions (Groq or OpenAI)
  */
-async function callAI({ messages, model = "gpt-4-turbo", apiKey, maxTokens = 1024, temperature = 0.7 }) {
-  const isOpenAI = model.startsWith('gpt-');
-  const baseURL = isOpenAI ? OPENAI_BASE_URL : GROQ_BASE_URL;
-  const key = apiKey || (isOpenAI ? process.env.OPENAI_API_KEY : process.env.GROQ_API_KEY);
-  const keyType = isOpenAI ? "OpenAI" : "Groq";
+async function callAI({ messages, model = "gpt-oss-120b", apiKey, maxTokens = 1024, temperature = 0.7 }) {
+  const isOpenAI = model.startsWith('gpt-') && model !== 'gpt-oss-120b';
+  const isGPTOSS = model === 'gpt-oss-120b';
+  const baseURL = isOpenAI ? OPENAI_BASE_URL : isGPTOSS ? OPENROUTER_BASE_URL : GROQ_BASE_URL;
+  const key = apiKey || (isOpenAI ? process.env.OPENAI_API_KEY : isGPTOSS ? process.env.OPENROUTER_API_KEY : process.env.GROQ_API_KEY);
+  const keyType = isOpenAI ? "OpenAI" : isGPTOSS ? "OpenRouter" : "Groq";
   
   if (!key) throw new Error(`${keyType} API key is missing.`);
 
@@ -79,7 +81,7 @@ export async function transcribeAudio(audioBuffer, mimeType = "audio/webm", apiK
  */
 export async function getSuggestions(transcript, apiKey, settings = {}) {
   const customPrompt = settings.suggestionsPrompt;
-  const model = settings.model || "gpt-4-turbo";
+  const model = settings.model || "gpt-oss-120b";
   
   const systemPrompt = customPrompt || `You are an AI meeting copilot that helps users stay sharp during live conversations.
 
@@ -132,7 +134,7 @@ OUTPUT FORMAT:
  */
 export async function getDetailedAnswer(transcript, suggestion, apiKey, settings = {}) {
   const customPrompt = settings.detailedAnswersPrompt;
-  const model = settings.model || "gpt-4-turbo";
+  const model = settings.model || "gpt-oss-120b";
   const contextWindow = settings.detailedAnswersContextWindow || 6000;
   
   const systemPrompt = customPrompt || `You are an expert AI meeting assistant providing detailed, actionable answers.
@@ -150,7 +152,7 @@ Keep the total response under 200 words. Be clear, structured, and meeting-focus
   const limitedTranscript = transcript.slice(-contextWindow);
   const userPrompt = `Full meeting transcript:\n${limitedTranscript}\n\nUser selected this suggestion:\n"${suggestion.text}"\n\nType: ${suggestion.type}`;
 
-  return callGroq({
+  return callAI({
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
@@ -167,7 +169,7 @@ Keep the total response under 200 words. Be clear, structured, and meeting-focus
  */
 export async function getChatAnswer(transcript, history, question, apiKey, settings = {}) {
   const customPrompt = settings.chatPrompt;
-  const model = settings.model || "gpt-4-turbo";
+  const model = settings.model || "gpt-oss-120b";
   
   const systemPrompt = customPrompt || `You are an AI assistant embedded inside a live meeting tool.
 

@@ -10,7 +10,7 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
     chatPrompt: '',
     suggestionsContextWindow: 4000,
     detailedAnswersContextWindow: 6000,
-    model: 'gpt-4-turbo'
+    model: 'gpt-oss-120b'
   });
 
   const handleSave = () => {
@@ -33,7 +33,11 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
           <div style={styles.field}>
             <label style={styles.label}>API Key</label>
             <p style={styles.fieldHint}>
-              For GPT models:{" "}
+              For GPT-OSS:{" "}
+              <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noreferrer" style={styles.link}>
+                OpenRouter API Keys
+              </a>
+              {" | For GPT models: "}
               <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" style={styles.link}>
                 OpenAI API Keys
               </a>
@@ -47,7 +51,7 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
                 type={showKey ? "text" : "password"}
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-                placeholder="sk-... or gsk_..."
+                placeholder="sk-or-... or sk-... or gsk_..."
                 style={styles.input}
               />
               <button style={styles.eyeBtn} onClick={() => setShowKey((s) => !s)}>
@@ -68,7 +72,8 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
                 onChange={(e) => setLocalSettings(prev => ({...prev, model: e.target.value}))}
                 style={styles.select}
               >
-                <option value="gpt-4-turbo">🚀 GPT-4 Turbo (Recommended)</option>
+                <option value="gpt-oss-120b">🔥 GPT-OSS 120B (Required)</option>
+                <option value="gpt-4-turbo">🚀 GPT-4 Turbo</option>
                 <option value="gpt-4">🧠 GPT-4 (Advanced)</option>
                 <option value="llama-3.1-405b-reasoning">🧠 LLaMA 3.1 405B (Reasoning)</option>
                 <option value="llama-3.3-70b-versatile">⚡ LLaMA 3.3 70B (Versatile)</option>
