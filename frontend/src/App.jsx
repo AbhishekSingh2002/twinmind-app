@@ -44,21 +44,25 @@ export default function App() {
 
   const getTranscript = (c = chunks) => c.map((x) => x.text).join(" ");
 
+  const fetchSuggestionsNow = useCallback(async (text) => {
+    if (text.trim().length < 30) return;
+    setIsLoadingSugg(true);
+    try {
+      const s = await fetchSuggestions(text, apiKey, settings);
+      setSuggestions(s);
+    } catch (e) {
+      setError("Suggestions: " + e.message);
+    } finally {
+      setIsLoadingSugg(false);
+    }
+  }, [apiKey, settings]);
+
   const scheduleSuggestions = useCallback((text) => {
     clearTimeout(suggestTimer.current);
-    suggestTimer.current = setTimeout(async () => {
-      if (text.trim().length < 30) return;
-      setIsLoadingSugg(true);
-      try {
-        const s = await fetchSuggestions(text, apiKey, settings);
-        setSuggestions(s);
-      } catch (e) {
-        setError("Suggestions: " + e.message);
-      } finally {
-        setIsLoadingSugg(false);
-      }
+    suggestTimer.current = setTimeout(() => {
+      fetchSuggestionsNow(text);
     }, 3000);
-  }, [apiKey, settings]);
+  }, [fetchSuggestionsNow]);
 
   const handleChunk = useCallback((chunk) => {
     setChunks((prev) => {
@@ -103,6 +107,13 @@ export default function App() {
     setIsDemo(false); setError("");
   };
 
+  const handleRefreshSuggestions = () => {
+    const transcript = getTranscript();
+    if (transcript.trim()) {
+      fetchSuggestionsNow(transcript);
+    }
+  };
+
   const transcript = getTranscript();
 
   return (
@@ -134,7 +145,7 @@ export default function App() {
 
         <div style={s.columns}>
           <Transcript chunks={chunks} isDemo={isDemo} apiKey={apiKey} onChunk={handleChunk} onError={setError} />
-          <Suggestions suggestions={suggestions} isLoading={isLoadingSuggestions} onSuggestionClick={handleSuggestionClick} />
+          <Suggestions suggestions={suggestions} isLoading={isLoadingSuggestions} onSuggestionClick={handleSuggestionClick} onRefresh={handleRefreshSuggestions} />
           <Chat history={chatHistory} onSend={handleChatSend} />
         </div>
 

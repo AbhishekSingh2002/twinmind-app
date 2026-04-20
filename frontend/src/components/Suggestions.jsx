@@ -4,14 +4,24 @@ const TYPE_COLORS = {
   clarify:  { bg: "rgba(250,200,109,0.08)", border: "rgba(250,200,109,0.25)", accent: "#fac86d", label: "bg" },
 };
 
-export default function Suggestions({ suggestions, isLoading, onSuggestionClick }) {
+export default function Suggestions({ suggestions, isLoading, onSuggestionClick, onRefresh }) {
   return (
     <div style={styles.panel}>
       <div style={styles.panelHeader}>
         <div style={styles.panelTitle}>
           <span style={{ color: "var(--accent)" }}>◈</span> AI Suggestions
         </div>
-        {isLoading && <LoadingDots />}
+        <div style={styles.headerActions}>
+          <button 
+            style={styles.refreshBtn} 
+            onClick={onRefresh}
+            disabled={isLoading}
+            title="Refresh suggestions"
+          >
+            {isLoading ? '⟳' : '↻'}
+          </button>
+          {isLoading && <LoadingDots />}
+        </div>
       </div>
 
       <div style={styles.body}>
@@ -202,4 +212,33 @@ const styles = {
     justifyContent: "center",
   },
   tipIcon: { fontSize: "14px" },
+  headerActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  refreshBtn: {
+    background: "var(--surface2)",
+    border: "1px solid var(--border)",
+    borderRadius: "6px",
+    color: "var(--text-dim)",
+    fontSize: "14px",
+    width: "28px",
+    height: "28px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    transition: "all 0.2s",
+    fontFamily: "var(--mono)",
+  },
+  "refreshBtn:hover:not(:disabled)": {
+    background: "var(--accent)",
+    color: "#fff",
+    borderColor: "var(--accent)",
+  },
+  "refreshBtn:disabled": {
+    opacity: 0.5,
+    cursor: "not-allowed",
+  },
 };
