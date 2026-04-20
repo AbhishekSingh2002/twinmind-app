@@ -10,7 +10,7 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
     chatPrompt: '',
     suggestionsContextWindow: 4000,
     detailedAnswersContextWindow: 6000,
-    model: 'llama-3.1-405b-reasoning'
+    model: 'gpt-4-turbo'
   });
 
   const handleSave = () => {
@@ -31,11 +31,15 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
         <div style={styles.body}>
           {/* API Key */}
           <div style={styles.field}>
-            <label style={styles.label}>Groq API Key</label>
+            <label style={styles.label}>API Key</label>
             <p style={styles.fieldHint}>
-              Get your key at{" "}
+              For GPT models:{" "}
+              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" style={styles.link}>
+                OpenAI API Keys
+              </a>
+              {" | For Groq models: "}
               <a href="https://console.groq.com" target="_blank" rel="noreferrer" style={styles.link}>
-                console.groq.com
+                Groq Console
               </a>
             </p>
             <div style={styles.inputWrap}>
@@ -43,7 +47,7 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
                 type={showKey ? "text" : "password"}
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-                placeholder="gsk_..."
+                placeholder="sk-... or gsk_..."
                 style={styles.input}
               />
               <button style={styles.eyeBtn} onClick={() => setShowKey((s) => !s)}>
@@ -64,6 +68,8 @@ export default function Settings({ apiKey, setApiKey, onClose, settings, setSett
                 onChange={(e) => setLocalSettings(prev => ({...prev, model: e.target.value}))}
                 style={styles.select}
               >
+                <option value="gpt-4-turbo">🚀 GPT-4 Turbo (Recommended)</option>
+                <option value="gpt-4">🧠 GPT-4 (Advanced)</option>
                 <option value="llama-3.1-405b-reasoning">🧠 LLaMA 3.1 405B (Reasoning)</option>
                 <option value="llama-3.3-70b-versatile">⚡ LLaMA 3.3 70B (Versatile)</option>
                 <option value="mixtral-8x7b-32768">🔀 Mixtral 8x7B (32K)</option>

@@ -1,15 +1,20 @@
 import fetch from "node-fetch";
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
+const OPENAI_BASE_URL = "https://api.openai.com/v1";
 
 /**
- * Core function to call Groq chat completions
+ * Core function to call AI chat completions (Groq or OpenAI)
  */
-async function callGroq({ messages, model = "llama-3.1-405b-reasoning", apiKey, maxTokens = 1024, temperature = 0.7 }) {
-  const key = apiKey || process.env.GROQ_API_KEY;
-  if (!key) throw new Error("Groq API key is missing.");
+async function callAI({ messages, model = "gpt-4-turbo", apiKey, maxTokens = 1024, temperature = 0.7 }) {
+  const isOpenAI = model.startsWith('gpt-');
+  const baseURL = isOpenAI ? OPENAI_BASE_URL : GROQ_BASE_URL;
+  const key = apiKey || (isOpenAI ? process.env.OPENAI_API_KEY : process.env.GROQ_API_KEY);
+  const keyType = isOpenAI ? "OpenAI" : "Groq";
+  
+  if (!key) throw new Error(`${keyType} API key is missing.`);
 
-  const response = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
+  const response = await fetch(`${baseURL}/chat/completions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,
@@ -25,11 +30,18 @@ async function callGroq({ messages, model = "llama-3.1-405b-reasoning", apiKey, 
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Groq API error: ${response.status}`);
+    throw new Error(err?.error?.message || `${keyType} API error: ${response.status}`);
   }
 
   const data = await response.json();
   return data.choices?.[0]?.message?.content || "";
+}
+
+/**
+ * Legacy function for backward compatibility
+ */
+async function callGroq({ messages, model = "llama-3.1-405b-reasoning", apiKey, maxTokens = 1024, temperature = 0.7 }) {
+  return callAI({ messages, model, apiKey, maxTokens, temperature });
 }
 
 /**
@@ -67,7 +79,7 @@ export async function transcribeAudio(audioBuffer, mimeType = "audio/webm", apiK
  */
 export async function getSuggestions(transcript, apiKey, settings = {}) {
   const customPrompt = settings.suggestionsPrompt;
-  const model = settings.model || "llama-3.1-405b-reasoning";
+  const model = settings.model || "gpt-4-turbo";
   
   const systemPrompt = customPrompt || `You are an AI meeting copilot that helps users stay sharp during live conversations.
 
@@ -93,7 +105,7 @@ OUTPUT FORMAT:
 
   const userPrompt = `Meeting transcript (latest context):\n\n${transcript}`;
 
-  const raw = await callGroq({
+  const raw = await callAI({
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
@@ -120,7 +132,7 @@ OUTPUT FORMAT:
  */
 export async function getDetailedAnswer(transcript, suggestion, apiKey, settings = {}) {
   const customPrompt = settings.detailedAnswersPrompt;
-  const model = settings.model || "llama-3.1-405b-reasoning";
+  const model = settings.model || "gpt-4-turbo";
   const contextWindow = settings.detailedAnswersContextWindow || 6000;
   
   const systemPrompt = customPrompt || `You are an expert AI meeting assistant providing detailed, actionable answers.
@@ -155,7 +167,7 @@ Keep the total response under 200 words. Be clear, structured, and meeting-focus
  */
 export async function getChatAnswer(transcript, history, question, apiKey, settings = {}) {
   const customPrompt = settings.chatPrompt;
-  const model = settings.model || "llama-3.1-405b-reasoning";
+  const model = settings.model || "gpt-4-turbo";
   
   const systemPrompt = customPrompt || `You are an AI assistant embedded inside a live meeting tool.
 
@@ -176,5 +188,5 @@ ${transcript || "(No transcript yet — meeting may not have started)"}`;
     { role: "user", content: question },
   ];
 
-  return callGroq({ messages, apiKey, model, maxTokens: 768, temperature: 0.65 });
+  return callAI({ messages, apiKey, model, maxTokens: 768, temperature: 0.65 });
 }

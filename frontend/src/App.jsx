@@ -138,7 +138,7 @@ export default function App() {
 
         {!apiKey && (
           <div style={s.banner}>
-            <span>🔑 Add your Groq API key in Settings to enable AI features.</span>
+            <span>🔑 Add your API key in Settings to enable AI features.</span>
             <button style={s.bannerBtn} onClick={() => setShowSettings(true)}>Open Settings →</button>
           </div>
         )}
