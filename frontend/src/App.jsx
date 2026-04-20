@@ -16,10 +16,11 @@ const GLOBAL_CSS = `
     --text: #e8e8f0; --text-muted: #6b6b8a; --text-dim: #9090b0;
     --radius: 12px; --font: 'Syne', sans-serif; --mono: 'JetBrains Mono', monospace;
   }
-  html, body, #root { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); overflow: hidden; }
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  html, body, #root { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); overflow: auto; }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--surface2); }
+  ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent2); }
   button { font-family: var(--font); cursor: pointer; border: none; outline: none; }
   input, textarea { font-family: var(--font); outline: none; border: none; }
   @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }

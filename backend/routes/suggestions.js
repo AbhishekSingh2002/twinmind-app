@@ -16,7 +16,7 @@ router.post("/", async (req, res, next) => {
     }
 
     // Use custom context window or default to 1500
-    const contextWindow = settings.suggestionsContextWindow || 1500;
+    const contextWindow = settings?.suggestionsContextWindow || 1500;
     const chunk = transcript.slice(-contextWindow);
     const suggestions = await getSuggestions(chunk, apiKey, settings);
 
