@@ -1,4 +1,4 @@
-import { getSuggestions } from "../backend/services/groqService.js";
+import { getSuggestions } from "./services/groqService.js";
 
 export default async function handler(req, res) {
   // Add CORS headers

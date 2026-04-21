@@ -1,4 +1,4 @@
-import { chatWithAI } from "../backend/services/groqService.js";
+import { chatWithAI } from "./services/groqService.js";
 
 export default async function handler(req, res) {
   // Add CORS headers
