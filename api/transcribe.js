@@ -10,27 +10,50 @@ export const config = { api: { bodyParser: false } };
 /** Parse multipart/form-data from a Vercel/Node request */
 function parseMultipart(req) {
   return new Promise((resolve, reject) => {
-    const fields = {};
-    const files  = {};
+    try {
+      const fields = {};
+      const files  = {};
 
-    const bb = busboy({ headers: req.headers });
+      console.log("[DEBUG] Starting multipart parse with headers:", req.headers);
 
-    bb.on("field", (name, val) => {
-      fields[name] = val;
-    });
+      const bb = busboy({ headers: req.headers });
 
-    bb.on("file", (name, stream, info) => {
-      const chunks = [];
-      stream.on("data", (chunk) => chunks.push(chunk));
-      stream.on("end",  () => {
-        files[name] = { buffer: Buffer.concat(chunks), mimetype: info.mimeType };
+      bb.on("field", (name, val) => {
+        console.log(`[DEBUG] Field received: ${name}`);
+        fields[name] = val;
       });
-    });
 
-    bb.on("finish", () => resolve({ fields, files }));
-    bb.on("error",  (err) => reject(err));
+      bb.on("file", (name, stream, info) => {
+        console.log(`[DEBUG] File received: ${name}, info:`, info);
+        const chunks = [];
+        stream.on("data", (chunk) => {
+          chunks.push(chunk);
+        });
+        stream.on("end",  () => {
+          const buffer = Buffer.concat(chunks);
+          console.log(`[DEBUG] File ${name} processed, size: ${buffer.length} bytes`);
+          files[name] = { buffer, mimetype: info.mimeType };
+        });
+        stream.on("error", (err) => {
+          console.error(`[DEBUG] Stream error for ${name}:`, err);
+          reject(err);
+        });
+      });
 
-    req.pipe(bb);
+      bb.on("finish", () => {
+        console.log("[DEBUG] Multipart parsing completed");
+        resolve({ fields, files });
+      });
+      bb.on("error",  (err) => {
+        console.error("[DEBUG] Busboy error:", err);
+        reject(err);
+      });
+
+      req.pipe(bb);
+    } catch (err) {
+      console.error("[DEBUG] Parse multipart error:", err);
+      reject(err);
+    }
   });
 }
 
@@ -49,18 +72,26 @@ function setCors(req, res) {
 }
 
 export default async function handler(req, res) {
+  console.log("[DEBUG] Transcribe handler called, method:", req.method);
+  console.log("[DEBUG] Headers:", req.headers);
+  
   setCors(req, res);
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST")   return res.status(405).json({ error: "Method not allowed" });
 
   const ct = req.headers["content-type"] || "";
+  console.log("[DEBUG] Content-Type:", ct);
+  
   if (!ct.includes("multipart/form-data")) {
+    console.log("[DEBUG] Not multipart, returning 400");
     return res.status(400).json({ error: "Content-Type must be multipart/form-data" });
   }
 
   try {
+    console.log("[DEBUG] Starting multipart parse...");
     const { fields, files } = await parseMultipart(req);
+    console.log("[DEBUG] Parse result - fields:", Object.keys(fields), "files:", Object.keys(files));
 
     if (!files.audio) {
       return res.status(400).json({ error: "No audio file provided. Use form field name 'audio'." });
