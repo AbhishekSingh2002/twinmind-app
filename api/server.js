@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 5000;
 
 // ─── Middleware ───────────────────────────────────────────────
 app.use(cors({ 
-  origin: ["http://localhost:5173", "https://twinmind-app.onrender.com"], 
+  origin: ["http://localhost:5173", "https://twinmind-app-one.vercel.app"], 
   credentials: true 
 }));
 app.use(express.json({ limit: "10mb" }));
