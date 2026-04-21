@@ -1,4 +1,6 @@
-// api/chat.js
+// api/suggestions-expand.js
+// Flat file — avoids Vercel nested-folder import path issues.
+// Route: POST /api/suggestions-expand
 // INLINED groqService to eliminate Vercel import dependencies.
 
 export const config = { api: { bodyParser: true } };
@@ -28,27 +30,27 @@ async function callAI({ messages, model = "llama3-70b-8192", apiKey, maxTokens =
   return data.choices?.[0]?.message?.content || "";
 }
 
-async function chatWithAI(transcript, history = [], question, apiKey, settings = {}) {
-  const contextWindow = 8000;
-  const model         = settings?.model || "llama3-70b-8192";
+async function expandSuggestion(transcript, suggestion, apiKey, settings = {}) {
+  const contextWindow  = settings?.detailedAnswersContextWindow || 6000;
+  const model          = settings?.model || "llama3-70b-8192";
+  const suggestionText = typeof suggestion === "string"
+    ? suggestion
+    : suggestion?.text || String(suggestion);
 
-  const historyText = history
-    .slice(-10)
-    .map((h) => `${h.role}: ${h.content}`)
-    .join("\n");
+  const userPrompt = settings?.detailedAnswersPrompt
+    || `You are an AI meeting assistant. Based on this transcript and suggestion, give a structured, helpful response.
 
-  const userPrompt = settings?.chatPrompt
-    || `You are an AI assistant helping with meeting analysis.
+FORMAT:
+- TL;DR: one sentence summary
+- 3–5 bullet points of actionable insight
+- Next Step: one concrete recommendation
+
+Keep it under 200 words.
 
 Transcript:
 ${transcript.slice(-contextWindow)}
 
-Previous conversation:
-${historyText || "(none)"}
-
-Question: ${question}
-
-Provide a helpful, concise response based on the transcript.`;
+Suggestion: "${suggestionText}"`;
 
   return callAI({
     messages: [
@@ -57,8 +59,8 @@ Provide a helpful, concise response based on the transcript.`;
     ],
     model,
     apiKey,
-    maxTokens: 800,
-    temperature: 0.5,
+    maxTokens: 1000,
+    temperature: 0.4,
   });
 }
 
@@ -69,7 +71,7 @@ function setCors(req, res) {
   ];
   const origin = req.headers.origin;
   if (allowed.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin); // ← string, NOT array
+    res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -83,27 +85,21 @@ export default async function handler(req, res) {
   if (req.method !== "POST")   return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { transcript, history, question, apiKey, settings } = req.body || {};
+    const { transcript, apiKey, settings, suggestion } = req.body || {};
     const effectiveApiKey = apiKey || process.env.GROQ_API_KEY;
 
     if (!effectiveApiKey) {
       return res.status(400).json({ error: "API key is required" });
     }
-    if (!question) {
-      return res.status(400).json({ error: "Question is required" });
+    if (!transcript || !suggestion) {
+      return res.status(400).json({ error: "Transcript and suggestion are required" });
     }
 
-    const answer = await chatWithAI(
-      transcript || "",
-      history || [],
-      question,
-      effectiveApiKey,
-      settings
-    );
+    const answer = await expandSuggestion(transcript, suggestion, effectiveApiKey, settings);
     return res.status(200).json({ answer });
 
   } catch (error) {
-    console.error("[/api/chat ERROR]", error.message);
-    return res.status(500).json({ error: error.message || "Failed to process chat message" });
+    console.error("[/api/suggestions-expand ERROR]", error.message);
+    return res.status(500).json({ error: error.message || "Failed to expand suggestion" });
   }
 }
