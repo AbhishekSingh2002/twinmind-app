@@ -1,12 +1,17 @@
 // services/groqService.js
-// Node 18+ — uses native fetch, FormData, Blob (no node-fetch needed)
+// Requires Node 18+ (native fetch, FormData, Blob).
+// No node-fetch — it conflicts with native globals and breaks multipart uploads.
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 
-/**
- * Core function to call AI chat completions (Groq only)
- */
-async function callAI({ messages, model = "llama3-70b-8192", apiKey, maxTokens = 1024, temperature = 0.7 }) {
+// ── Core chat helper ──────────────────────────────────────────
+async function callAI({
+  messages,
+  model = "llama3-70b-8192",
+  apiKey,
+  maxTokens = 1024,
+  temperature = 0.7,
+}) {
   const key = apiKey || process.env.GROQ_API_KEY;
   if (!key) throw new Error("Groq API key is missing.");
 
@@ -16,62 +21,57 @@ async function callAI({ messages, model = "llama3-70b-8192", apiKey, maxTokens =
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      max_tokens: maxTokens,
-      temperature,
-    }),
+    body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature }),
   });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Groq API error: ${response.status}`);
+    throw new Error(err?.error?.message || `Groq chat error: ${response.status}`);
   }
 
   const data = await response.json();
   return data.choices?.[0]?.message?.content || "";
 }
 
-/**
- * Transcribe audio using Groq's Whisper model
- * audioBuffer: Buffer | ArrayBuffer
- * mimeType: e.g. "audio/webm"
- */
+// ── Transcribe audio via Whisper Large V3 ────────────────────
 export async function transcribeAudio(audioBuffer, mimeType = "audio/webm", apiKey) {
   const key = apiKey || process.env.GROQ_API_KEY;
   if (!key) throw new Error("Groq API key is missing.");
 
-  // Native FormData + Blob — available in Node 18+
-  const formData = new FormData();
-  formData.append("file", new Blob([audioBuffer], { type: mimeType }), "audio.webm");
-  formData.append("model", "whisper-large-v3");
-  formData.append("response_format", "json");
+  // Convert Node Buffer → Uint8Array so native Blob accepts it correctly
+  const uint8 = audioBuffer instanceof Uint8Array
+    ? audioBuffer
+    : new Uint8Array(audioBuffer.buffer, audioBuffer.byteOffset, audioBuffer.byteLength);
+
+  const form = new FormData();
+  // ⚠️ Do NOT manually set Content-Type on the fetch call below.
+  //    The browser/Node native fetch sets it automatically WITH the boundary.
+  //    Setting it manually omits the boundary → Groq returns 400.
+  form.append("file", new Blob([uint8], { type: mimeType }), "audio.webm");
+  form.append("model", "whisper-large-v3");
+  form.append("response_format", "json");
 
   const response = await fetch(`${GROQ_BASE_URL}/audio/transcriptions`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      // ⚠️ Do NOT set Content-Type manually here — fetch sets it with boundary automatically
-    },
-    body: formData,
+    headers: { Authorization: `Bearer ${key}` }, // NO Content-Type here
+    body: form,
   });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Transcription error: ${response.status}`);
+    throw new Error(
+      err?.error?.message || `Whisper error ${response.status}: ${JSON.stringify(err)}`
+    );
   }
 
   const data = await response.json();
   return data.text || "";
 }
 
-/**
- * Generate 3 context-aware suggestions for a meeting transcript
- */
+// ── Generate 3 suggestions ────────────────────────────────────
 export async function getSuggestions(transcript, apiKey, settings = {}) {
   const contextWindow = settings?.suggestionsContextWindow || 4000;
-  const model = settings?.model || "llama3-70b-8192";
+  const model         = settings?.model || "llama3-70b-8192";
 
   const systemPrompt = settings?.suggestionsPrompt || `You are an AI meeting copilot. Based on the transcript, generate exactly 3 smart suggestions.
 
@@ -80,36 +80,36 @@ Each must be a DIFFERENT type:
 2. An insight about key patterns or themes
 3. A clarification on ambiguous topics
 
-Return ONLY valid JSON — no markdown, no explanation:
+Return ONLY valid JSON — no markdown fences, no extra text:
 {
   "suggestions": [
-    { "id": "1", "type": "question",       "icon": "🙋", "label": "Ask",     "text": "..." },
-    { "id": "2", "type": "insight",        "icon": "💡", "label": "Insight",  "text": "..." },
-    { "id": "3", "type": "clarification",  "icon": "🔍", "label": "Clarify",  "text": "..." }
+    { "id": "1", "type": "question",      "icon": "🙋", "label": "Ask",    "text": "..." },
+    { "id": "2", "type": "insight",       "icon": "💡", "label": "Insight", "text": "..." },
+    { "id": "3", "type": "clarification", "icon": "🔍", "label": "Clarify", "text": "..." }
   ]
 }`;
 
-  const messages = [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: transcript.slice(-contextWindow) },
-  ];
+  const raw = await callAI({
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user",   content: transcript.slice(-contextWindow) },
+    ],
+    model,
+    apiKey,
+    maxTokens: 800,
+    temperature: 0.3,
+  });
 
-  const raw = await callAI({ messages, model, apiKey, maxTokens: 800, temperature: 0.3 });
-
+  // Robust JSON extraction
   try {
     const cleaned = raw.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(cleaned);
-    return parsed.suggestions || [];
+    return JSON.parse(cleaned).suggestions || [];
   } catch {
-    // Fallback: try extracting JSON object from response
     const match = raw.match(/\{[\s\S]*\}/);
     if (match) {
-      try {
-        const parsed = JSON.parse(match[0]);
-        return parsed.suggestions || [];
-      } catch {}
+      try { return JSON.parse(match[0]).suggestions || []; } catch {}
     }
-    // Safe fallback suggestions
+    // Safe static fallback — never crash the UI
     return [
       { id: "1", type: "question",      icon: "🙋", label: "Ask",    text: "What are the key action items from this discussion?" },
       { id: "2", type: "insight",       icon: "💡", label: "Insight", text: "The team seems aligned on the main objectives." },
@@ -118,16 +118,15 @@ Return ONLY valid JSON — no markdown, no explanation:
   }
 }
 
-/**
- * Expand a suggestion with a detailed answer
- */
+// ── Expand a suggestion into a full answer ────────────────────
 export async function expandSuggestion(transcript, suggestion, apiKey, settings = {}) {
-  const contextWindow = settings?.detailedAnswersContextWindow || 6000;
-  const model = settings?.model || "llama3-70b-8192";
+  const contextWindow  = settings?.detailedAnswersContextWindow || 6000;
+  const model          = settings?.model || "llama3-70b-8192";
+  const suggestionText = typeof suggestion === "string"
+    ? suggestion
+    : suggestion?.text || String(suggestion);
 
-  const suggestionText = typeof suggestion === "string" ? suggestion : suggestion?.text || String(suggestion);
-
-  const prompt = settings?.detailedAnswersPrompt
+  const userPrompt = settings?.detailedAnswersPrompt
     || `You are an AI meeting assistant. Based on this transcript and suggestion, give a structured, helpful response.
 
 FORMAT:
@@ -142,27 +141,29 @@ ${transcript.slice(-contextWindow)}
 
 Suggestion: "${suggestionText}"`;
 
-  const messages = [
-    { role: "system", content: "You are a helpful AI assistant for meeting analysis." },
-    { role: "user", content: prompt },
-  ];
-
-  return callAI({ messages, model, apiKey, maxTokens: 1000, temperature: 0.4 });
+  return callAI({
+    messages: [
+      { role: "system", content: "You are a helpful AI assistant for meeting analysis." },
+      { role: "user",   content: userPrompt },
+    ],
+    model,
+    apiKey,
+    maxTokens: 1000,
+    temperature: 0.4,
+  });
 }
 
-/**
- * Chat with AI about the meeting transcript
- */
+// ── Answer a free-form chat question ─────────────────────────
 export async function chatWithAI(transcript, history = [], question, apiKey, settings = {}) {
   const contextWindow = 8000;
-  const model = settings?.model || "llama3-70b-8192";
+  const model         = settings?.model || "llama3-70b-8192";
 
   const historyText = history
     .slice(-10)
     .map((h) => `${h.role}: ${h.content}`)
     .join("\n");
 
-  const prompt = settings?.chatPrompt
+  const userPrompt = settings?.chatPrompt
     || `You are an AI assistant helping with meeting analysis.
 
 Transcript:
@@ -175,10 +176,14 @@ Question: ${question}
 
 Provide a helpful, concise response based on the transcript.`;
 
-  const messages = [
-    { role: "system", content: "You are a helpful AI assistant for meeting analysis." },
-    { role: "user", content: prompt },
-  ];
-
-  return callAI({ messages, model, apiKey, maxTokens: 800, temperature: 0.5 });
+  return callAI({
+    messages: [
+      { role: "system", content: "You are a helpful AI assistant for meeting analysis." },
+      { role: "user",   content: userPrompt },
+    ],
+    model,
+    apiKey,
+    maxTokens: 800,
+    temperature: 0.5,
+  });
 }

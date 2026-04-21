@@ -1,59 +1,49 @@
 // api/transcribe.js
-// Vercel serverless function — parses multipart/form-data using busboy
-// bodyParser MUST be disabled so we can stream raw bytes
+// Works on both Vercel (serverless) and Express (local-server.js).
+// Parses multipart/form-data using busboy — no multer, no body-parser.
 
 import busboy from "busboy";
 import { transcribeAudio } from "../services/groqService.js";
 
+// Vercel: disables its built-in body parser for this route.
+// Express local server: this export is simply ignored — that's fine because
+// local-server.js deliberately does NOT use express.json() before this route.
 export const config = { api: { bodyParser: false } };
 
-/** Parse multipart/form-data from a Vercel/Node request */
+/** Stream-parse multipart/form-data from any Node IncomingMessage */
 function parseMultipart(req) {
   return new Promise((resolve, reject) => {
+    const fields = {};
+    const files  = {};
+
+    let bb;
     try {
-      const fields = {};
-      const files  = {};
-
-      console.log("[DEBUG] Starting multipart parse with headers:", req.headers);
-
-      const bb = busboy({ headers: req.headers });
-
-      bb.on("field", (name, val) => {
-        console.log(`[DEBUG] Field received: ${name}`);
-        fields[name] = val;
-      });
-
-      bb.on("file", (name, stream, info) => {
-        console.log(`[DEBUG] File received: ${name}, info:`, info);
-        const chunks = [];
-        stream.on("data", (chunk) => {
-          chunks.push(chunk);
-        });
-        stream.on("end",  () => {
-          const buffer = Buffer.concat(chunks);
-          console.log(`[DEBUG] File ${name} processed, size: ${buffer.length} bytes`);
-          files[name] = { buffer, mimetype: info.mimeType };
-        });
-        stream.on("error", (err) => {
-          console.error(`[DEBUG] Stream error for ${name}:`, err);
-          reject(err);
-        });
-      });
-
-      bb.on("finish", () => {
-        console.log("[DEBUG] Multipart parsing completed");
-        resolve({ fields, files });
-      });
-      bb.on("error",  (err) => {
-        console.error("[DEBUG] Busboy error:", err);
-        reject(err);
-      });
-
-      req.pipe(bb);
-    } catch (err) {
-      console.error("[DEBUG] Parse multipart error:", err);
-      reject(err);
+      bb = busboy({ headers: req.headers });
+    } catch (e) {
+      return reject(new Error("Failed to initialise busboy: " + e.message));
     }
+
+    bb.on("field", (name, val) => {
+      fields[name] = val;
+    });
+
+    bb.on("file", (name, stream, info) => {
+      const chunks = [];
+      stream.on("data", (chunk) => chunks.push(chunk));
+      stream.on("end",  () => {
+        files[name] = {
+          buffer:   Buffer.concat(chunks),
+          mimetype: info.mimeType || "audio/webm",
+        };
+      });
+      stream.on("error", reject);
+    });
+
+    bb.on("finish", () => resolve({ fields, files }));
+    bb.on("error",  (err) => reject(new Error("Busboy error: " + err.message)));
+
+    // Pipe the raw request stream into busboy
+    req.pipe(bb);
   });
 }
 
@@ -63,8 +53,9 @@ function setCors(req, res) {
     "https://twinmind-app-one.vercel.app",
   ];
   const origin = req.headers.origin;
+  // Must be a single string value — NOT an array
   if (allowed.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin); // ← string, NOT array
+    res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -72,44 +63,38 @@ function setCors(req, res) {
 }
 
 export default async function handler(req, res) {
-  console.log("[DEBUG] Transcribe handler called, method:", req.method);
-  console.log("[DEBUG] Headers:", req.headers);
-  
   setCors(req, res);
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST")   return res.status(405).json({ error: "Method not allowed" });
 
   const ct = req.headers["content-type"] || "";
-  console.log("[DEBUG] Content-Type:", ct);
-  
   if (!ct.includes("multipart/form-data")) {
-    console.log("[DEBUG] Not multipart, returning 400");
     return res.status(400).json({ error: "Content-Type must be multipart/form-data" });
   }
 
   try {
-    console.log("[DEBUG] Starting multipart parse...");
     const { fields, files } = await parseMultipart(req);
-    console.log("[DEBUG] Parse result - fields:", Object.keys(fields), "files:", Object.keys(files));
 
     if (!files.audio) {
-      return res.status(400).json({ error: "No audio file provided. Use form field name 'audio'." });
+      return res.status(400).json({
+        error: "No audio field found. Send FormData with field name 'audio'.",
+      });
     }
 
     const apiKey = fields.apiKey || process.env.GROQ_API_KEY;
     if (!apiKey) {
-      return res.status(400).json({ error: "API key is required" });
+      return res.status(400).json({ error: "Groq API key required. Send as form field 'apiKey' or set GROQ_API_KEY env var." });
     }
 
     const { buffer, mimetype } = files.audio;
 
-    // Skip near-silent chunks
+    // Skip near-silent / empty chunks rather than sending to Whisper
     if (buffer.length < 1000) {
       return res.status(200).json({ text: "", timestamp: new Date().toISOString() });
     }
 
-    const text = await transcribeAudio(buffer, mimetype || "audio/webm", apiKey);
+    const text = await transcribeAudio(buffer, mimetype, apiKey);
     return res.status(200).json({ text, timestamp: new Date().toISOString() });
 
   } catch (error) {
