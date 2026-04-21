@@ -63,17 +63,22 @@ function setCors(req, res) {
 }
 
 export default async function handler(req, res) {
-  setCors(req, res);
-
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST")   return res.status(405).json({ error: "Method not allowed" });
-
-  const ct = req.headers["content-type"] || "";
-  if (!ct.includes("multipart/form-data")) {
-    return res.status(400).json({ error: "Content-Type must be multipart/form-data" });
-  }
-
   try {
+    // Simple test first
+    console.log("[TEST] Handler called successfully");
+    return res.status(200).json({ test: "handler works", timestamp: new Date().toISOString() });
+    
+    setCors(req, res);
+
+    if (req.method === "OPTIONS") return res.status(200).end();
+    if (req.method !== "POST")   return res.status(405).json({ error: "Method not allowed" });
+
+    const ct = req.headers["content-type"] || "";
+    
+    if (!ct.includes("multipart/form-data")) {
+       return res.status(400).json({ error: "Content-Type must be multipart/form-data" });
+    }
+
     const { fields, files } = await parseMultipart(req);
 
     if (!files.audio) {
