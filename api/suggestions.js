@@ -7,9 +7,12 @@ export const config = { api: { bodyParser: true } };
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 
 async function callAI({ messages, model = "llama3-70b-8192", apiKey, maxTokens = 1024, temperature = 0.7 }) {
+  console.log("[callAI] Starting AI call");
   const key = apiKey || process.env.GROQ_API_KEY;
+  console.log("[callAI] API key present:", !!key);
   if (!key) throw new Error("Groq API key is missing.");
 
+  console.log("[callAI] Making request to Groq API");
   const response = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
@@ -29,6 +32,7 @@ async function callAI({ messages, model = "llama3-70b-8192", apiKey, maxTokens =
 }
 
 async function getSuggestions(transcript, apiKey, settings = {}) {
+  console.log("[getSuggestions] Starting suggestions generation");
   const contextWindow = settings?.suggestionsContextWindow || 4000;
   const model         = settings?.model || "llama3-70b-8192";
 
@@ -92,14 +96,19 @@ function setCors(req, res) {
 }
 
 export default async function handler(req, res) {
+  console.log("[/api/suggestions] Handler called");
   setCors(req, res);
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST")   return res.status(405).json({ error: "Method not allowed" });
 
   try {
+    console.log("[/api/suggestions] Parsing request body");
     const { transcript, apiKey, settings } = req.body || {};
     const effectiveApiKey = apiKey || process.env.GROQ_API_KEY;
+    
+    console.log("[/api/suggestions] API key present:", !!effectiveApiKey);
+    console.log("[/api/suggestions] Transcript length:", transcript?.length || 0);
 
     if (!effectiveApiKey) {
       return res.status(400).json({ error: "API key is required" });
