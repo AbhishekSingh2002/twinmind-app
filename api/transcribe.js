@@ -17,32 +17,6 @@ export default async function handler(req, res) {
     return;
   }
 
-  export const config = {
-  api: {
-    maxSize: '25mb',
-    maxFields: 10,
-    maxFiles: 1,
-    filter: function ({name, mimetype}) {
-      // Keep only audio files
-      return mimetype.startsWith('audio/');
-    }
-  }
-};
-
-export default async function handler(req, res) {
-  // Add CORS headers
-  res.setHeader('Access-Control-Allow-Origin', ['http://localhost:5173', 'https://twinmind-app-one.vercel.app']);
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
     return;
   }
 
@@ -97,6 +71,5 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('[Transcribe Error]', error.message);
     res.status(500).json({ error: error.message || 'Transcription failed' });
-  }
-}
+  };
 }
