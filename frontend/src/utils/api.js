@@ -1,47 +1,57 @@
 /**
- * api.js — centralized fetch helpers for all backend endpoints
- *
- * All functions throw an Error with a human-readable message on failure.
+ * api.js — all backend calls
+ * Local dev:  Vite proxy → /api/* → Express local-server :5001
+ * Vercel:     /api/* → serverless functions auto-routed by Vercel
  */
 
-const BASE = ""; // Vercel handles routing automatically
-
 async function post(path, body) {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || `Request to ${path} failed (${res.status})`);
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   return data;
 }
 
-/** Fetch 3 context-aware suggestions for a given transcript */
-export async function fetchSuggestions(transcript, apiKey, settings = {}) {
+/** Send audio blob → Whisper → transcript text */
+export async function transcribeBlob(blob, apiKey) {
+  const form = new FormData();
+  form.append("audio", blob, "chunk.webm");
+  if (apiKey) form.append("apiKey", apiKey);
+
+  const res = await fetch("/api/transcribe", { method: "POST", body: form });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `Transcribe failed (${res.status})`);
+  return data;
+}
+
+/** Fetch 3 context-aware suggestions */
+export async function fetchSuggestions(transcript, apiKey, settings) {
   const { suggestions } = await post("/api/suggestions", { transcript, apiKey, settings });
   return suggestions;
 }
 
-/** Expand a clicked suggestion into a full detailed answer */
-export async function expandSuggestion(transcript, suggestion, apiKey, settings = {}) {
-  const { answer } = await post("/api/suggestions/expand", { transcript, suggestion, apiKey, settings });
+/** Expand a clicked suggestion into a full answer */
+export async function expandSuggestion(transcript, suggestion, apiKey, settings) {
+  // Flat route — avoids Vercel nested-folder path issues
+  const { answer } = await post("/api/suggestions-expand", {
+    transcript,
+    suggestion,
+    apiKey,
+    settings,
+  });
   return answer;
 }
 
-/** Send a chat question grounded in the meeting transcript */
-export async function sendChatMessage(transcript, history, question, apiKey, settings = {}) {
+/** Free-form chat grounded in transcript */
+export async function sendChatMessage(transcript, history, question, apiKey, settings) {
   const { answer } = await post("/api/chat", { transcript, history, question, apiKey, settings });
   return answer;
 }
 
-/** Check if backend is reachable */
-export async function checkHealth() {
-  const res = await fetch(`${BASE}/api/health`);
-  return res.ok;
-}
-
-/** Export session data to a downloadable JSON file */
+/** Export session data as downloadable JSON */
 export function exportSession(transcript, suggestions, chatHistory) {
   const data = {
     exportedAt: new Date().toISOString(),
@@ -54,12 +64,11 @@ export function exportSession(transcript, suggestions, chatHistory) {
     suggestions,
     chatHistory,
   };
-
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  a.href     = url;
-  a.download = `twinmind-session-${new Date().toISOString().slice(0, 10)}.json`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `twinmind-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }

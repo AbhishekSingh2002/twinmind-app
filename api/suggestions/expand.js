@@ -1,5 +1,8 @@
-// api/suggestions/expand.js
-import { expandSuggestion } from "../../services/groqService.js";
+// api/suggestions-expand.js
+// Flat file — avoids Vercel nested-folder import path issues.
+// Route: POST /api/suggestions-expand
+
+import { expandSuggestion } from "../services/groqService.js";
 
 export const config = { api: { bodyParser: true } };
 
@@ -10,7 +13,7 @@ function setCors(req, res) {
   ];
   const origin = req.headers.origin;
   if (allowed.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin); // ← string, NOT array
+    res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -38,7 +41,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ answer });
 
   } catch (error) {
-    console.error("[/api/suggestions/expand ERROR]", error.message);
+    console.error("[/api/suggestions-expand ERROR]", error.message);
     return res.status(500).json({ error: error.message || "Failed to expand suggestion" });
   }
 }
