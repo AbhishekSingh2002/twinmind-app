@@ -1,4 +1,4 @@
-import { getSuggestions } from "../backend/services/groqService.js";
+import { expandSuggestion } from "../../backend/services/groqService.js";
 
 export default async function handler(req, res) {
   // Add CORS headers
@@ -18,26 +18,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { transcript, apiKey, settings } = req.body;
+    const { transcript, apiKey, settings, suggestion } = req.body;
     const effectiveApiKey = apiKey || process.env.GROQ_API_KEY;
 
     if (!effectiveApiKey) {
       return res.status(400).json({ error: "API key is required" });
     }
 
-    if (!transcript) {
-      return res.status(400).json({ error: "Transcript is required" });
+    if (!transcript || !suggestion) {
+      return res.status(400).json({ error: "Transcript and suggestion are required" });
     }
 
-    if (transcript.length < 30) {
-      return res.status(400).json({ error: "Transcript too short to generate suggestions" });
-    }
-
-    const suggestions = await getSuggestions(transcript, effectiveApiKey, settings);
-    res.json({ suggestions });
+    const answer = await expandSuggestion(transcript, suggestion, effectiveApiKey, settings);
+    res.json({ answer });
 
   } catch (error) {
-    console.error('[Suggestions Error]', error.message);
-    res.status(500).json({ error: error.message || 'Failed to generate suggestions' });
+    console.error('[Suggestions Expand Error]', error.message);
+    res.status(500).json({ error: error.message || 'Failed to expand suggestion' });
   }
 }
