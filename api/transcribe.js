@@ -1,4 +1,4 @@
-import { transcribeAudio } from "../services/groqService.js";
+import { transcribeAudio } from "../backend/services/groqService.js";
 
 export default async function handler(req, res) {
   // Add CORS headers
