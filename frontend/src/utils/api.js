@@ -4,7 +4,7 @@
  * All functions throw an Error with a human-readable message on failure.
  */
 
-const BASE = "https://twinmind-app.onrender.com"; // Render backend URL
+const BASE = ""; // Vercel handles routing automatically
 
 async function post(path, body) {
   const res = await fetch(`${BASE}${path}`, {
