@@ -1,14 +1,45 @@
 // api/transcribe.js
 // Works on both Vercel (serverless) and Express (local-server.js).
 // Parses multipart/form-data using busboy — no multer, no body-parser.
+// INLINED groqService to eliminate Vercel import dependencies.
 
 import busboy from "busboy";
-import { transcribeAudio } from "../services/groqService.js";
 
-// Vercel: disables its built-in body parser for this route.
-// Express local server: this export is simply ignored — that's fine because
-// local-server.js deliberately does NOT use express.json() before this route.
 export const config = { api: { bodyParser: false } };
+
+// ── Inlined Groq Service Functions ──────────────────────────────
+const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
+
+async function transcribeAudio(audioBuffer, mimeType = "audio/webm", apiKey) {
+  const key = apiKey || process.env.GROQ_API_KEY;
+  if (!key) throw new Error("Groq API key is missing.");
+
+  // Convert Node Buffer → Uint8Array so native Blob accepts it correctly
+  const uint8 = audioBuffer instanceof Uint8Array
+    ? audioBuffer
+    : new Uint8Array(audioBuffer.buffer, audioBuffer.byteOffset, audioBuffer.byteLength);
+
+  const form = new FormData();
+  form.append("file", new Blob([uint8], { type: mimeType }), "audio.webm");
+  form.append("model", "whisper-large-v3");
+  form.append("response_format", "json");
+
+  const response = await fetch(`${GROQ_BASE_URL}/audio/transcriptions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}` }, // NO Content-Type here
+    body: form,
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(
+      err?.error?.message || `Whisper error ${response.status}: ${JSON.stringify(err)}`
+    );
+  }
+
+  const data = await response.json();
+  return data.text || "";
+}
 
 /** Stream-parse multipart/form-data from any Node IncomingMessage */
 function parseMultipart(req) {

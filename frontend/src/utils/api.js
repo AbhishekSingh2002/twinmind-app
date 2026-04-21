@@ -10,7 +10,18 @@ async function post(path, body) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const data = await res.json();
+  
+  // Handle HTML error pages from Vercel gracefully
+  const text = await res.text();
+  let data;
+  
+  try {
+    data = JSON.parse(text);
+  } catch {
+    // If response is not JSON, it's likely an HTML error page
+    throw new Error(`Server error (${res.status}): ${text.slice(0, 100)}...`);
+  }
+  
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   return data;
 }
@@ -22,8 +33,19 @@ export async function transcribeBlob(blob, apiKey) {
   if (apiKey) form.append("apiKey", apiKey);
 
   const res = await fetch("/api/transcribe", { method: "POST", body: form });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || `Transcribe failed (${res.status})`);
+  
+  // Handle HTML error pages from Vercel gracefully
+  const text = await res.text();
+  let data;
+  
+  try {
+    data = JSON.parse(text);
+  } catch {
+    // If response is not JSON, it's likely an HTML error page
+    throw new Error(`Transcription error (${res.status}): ${text.slice(0, 100)}...`);
+  }
+  
+  if (!res.ok) throw new Error(data.error || `Transcription failed (${res.status})`);
   return data;
 }
 
