@@ -18,40 +18,25 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Handle multipart form data
+    // Handle multipart form data for Vercel
     const contentType = req.headers['content-type'];
     if (!contentType || !contentType.includes('multipart/form-data')) {
       return res.status(400).json({ error: 'Content-Type must be multipart/form-data' });
     }
 
-    // Parse form data manually for Vercel
-    const chunks = [];
-    for await (const chunk of req) {
-      chunks.push(chunk);
-    }
-    const body = Buffer.concat(chunks).toString();
-    
-    // Simple multipart parsing (basic implementation)
-    const boundary = contentType.split('boundary=')[1];
-    const parts = body.split(`--${boundary}`);
-    
-    let audioBuffer = null;
+    // Get API key
     let apiKey = process.env.GROQ_API_KEY;
-    
-    for (const part of parts) {
-      if (part.includes('name="audio"')) {
-        const dataStart = part.indexOf('\r\n\r\n') + 4;
-        const dataEnd = part.lastIndexOf('\r\n');
-        if (dataStart > 3 && dataEnd > dataStart) {
-          audioBuffer = Buffer.from(part.slice(dataStart, dataEnd), 'binary');
-        }
+    let audioBuffer = null;
+
+    // Parse form data using Vercel's built-in parser
+    if (req.body) {
+      if (req.body.apiKey) {
+        apiKey = req.body.apiKey;
       }
-      if (part.includes('name="apiKey"')) {
-        const dataStart = part.indexOf('\r\n\r\n') + 4;
-        const dataEnd = part.lastIndexOf('\r\n');
-        if (dataStart > 3 && dataEnd > dataStart) {
-          apiKey = part.slice(dataStart, dataEnd).trim();
-        }
+      
+      // Handle file upload
+      if (req.body.audio && req.body.audio.buffer) {
+        audioBuffer = Buffer.from(req.body.audio.buffer);
       }
     }
 
