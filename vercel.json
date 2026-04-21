@@ -2,15 +2,10 @@
   "version": 2,
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
+  "installCommand": "cd api && npm install",
   "functions": {
-    "backend/server.js": {
+    "api/server.js": {
       "maxDuration": 30
     }
-  },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/backend/server.js"
-    }
-  ]
+  }
 }
