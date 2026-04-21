@@ -49,7 +49,7 @@ export function useRecorder({ apiKey, onChunk, onStatus, onError }) {
       form.append("audio", blob, "chunk.webm");
       if (apiKey) form.append("apiKey", apiKey);
 
-      const res = await fetch("/transcribe", { method: "POST", body: form });
+      const res = await fetch("/api/transcribe", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Transcription failed");
 
