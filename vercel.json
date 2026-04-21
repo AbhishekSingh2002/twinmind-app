@@ -22,8 +22,5 @@
       "src": "/(.*)",
       "dest": "/frontend/dist/$1"
     }
-  ],
-  "env": {
-    "GROQ_API_KEY": "@groq-api-key"
-  }
+  ]
 }
